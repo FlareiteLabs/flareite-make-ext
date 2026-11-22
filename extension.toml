@@ -1,0 +1,177 @@
+# Makefile: highlighting from a Tree-sitter grammar compiled to WebAssembly,
+# tabs for indentation, a Targets view to run and build targets, a
+# background build whose errors and warnings go to Problems, a check for
+# recipe lines indented with spaces, and completion and hover for
+# variables, functions, and targets. See Flareite's docs/extensions.md.
+id = "flareite.makefile"
+name = "Makefile"
+version = "1.0.0"
+description = "Makefiles: highlighting, tabs, a Targets view, builds with their problems, and completion."
+author = "Flareite"
+icon = "icon.svg"
+api_version = "2"
+entrypoint = "target/wasm32-unknown-unknown/release/makefile.wasm"
+activation = [
+  "on-language:makefile",
+  "on-folder-contains:Makefile",
+  "on-folder-contains:makefile",
+  "on-folder-contains:GNUmakefile",
+  "on-view:targets",
+]
+# Lists the makefiles again in a newly opened folder.
+events = ["folder-changed"]
+
+[engines]
+flareite = ">=0.1.0"
+
+# documents_read: makefiles, checking their recipes, and completing them.
+# files_read: the folder's makefiles and the files they include, for the
+# Targets view; and watching them. processes: make, run on your targets.
+[permissions]
+documents_read = true
+files_read = true
+processes = true
+
+[build]
+command = "cargo"
+args = ["build", "--release"]
+watch = ["src", "Cargo.toml"]
+
+[[languages]]
+id = "makefile"
+name = "Makefile"
+file_extensions = ["mk", "mak", "make"]
+file_names = ["Makefile", "makefile", "GNUmakefile", "BSDmakefile"]
+grammar = "grammars/tree-sitter-make.wasm"
+grammar_name = "make"
+highlights = "queries/highlights.scm"
+folds = "queries/folds.scm"
+line_comment = "#"
+# Recipes start with a tab: Tab inserts one, whatever the settings say (a
+# file's .editorconfig still decides).
+indentation = "tabs"
+brackets = [["(", ")"], ["{", "}"]]
+auto_closing_pairs = [
+  [
+    "(",
+    ")",
+  ],
+  [
+    "{",
+    "}",
+  ],
+  { open = '"', close = '"', not_in = [
+    "string",
+    "comment",
+  ] },
+  { open = "'", close = "'", not_in = [
+    "string",
+    "comment",
+  ] },
+]
+
+# GNU make. Elsewhere set where it is: [extensions.programs]
+# "flareite.makefile.make" = "C:/msys64/ucrt64/bin/mingw32-make.exe".
+[[programs]]
+name = "make"
+
+[[completion_providers]]
+languages = ["makefile"]
+trigger_characters = ["(", "{", " "]
+
+[[hover_providers]]
+languages = ["makefile"]
+
+[[code_action_providers]]
+languages = ["makefile"]
+
+[[view_containers]]
+id = "make"
+title = "Make"
+icon = "bolt"
+
+[[views]]
+id = "targets"
+title = "Targets"
+container = "make"
+
+[[menus]]
+location = "view/item"
+view = "targets"
+contexts = ["target", "makefile"]
+command = "flareite.makefile.runTarget"
+inline = true
+icon = "play"
+
+[[menus]]
+location = "view/item"
+view = "targets"
+contexts = ["target", "makefile"]
+command = "flareite.makefile.buildTarget"
+inline = true
+icon = "check"
+
+[[menus]]
+location = "view/title"
+view = "targets"
+command = "flareite.makefile.refresh"
+inline = true
+icon = "refresh"
+
+[[menus]]
+location = "view/title"
+view = "targets"
+command = "flareite.makefile.stopBuild"
+
+[[menus]]
+location = "view/title"
+view = "targets"
+command = "flareite.makefile.clearProblems"
+
+# Builds again, or asks which target to build; shows a build running and
+# how it ended.
+[[status_items]]
+id = "build"
+alignment = "left"
+priority = 40
+text = "Make"
+tooltip = "Build a target with make"
+command = "flareite.makefile.buildAgain"
+
+[[commands]]
+id = "flareite.makefile.open"
+title = "Go to Target"
+hidden = true
+
+[[commands]]
+id = "flareite.makefile.runTarget"
+title = "Run Target in Terminal"
+
+[[commands]]
+id = "flareite.makefile.buildTarget"
+title = "Build Target"
+
+[[commands]]
+id = "flareite.makefile.build"
+title = "Build Default Goal"
+
+[[commands]]
+id = "flareite.makefile.buildAgain"
+title = "Build Again"
+
+[[commands]]
+id = "flareite.makefile.stopBuild"
+title = "Stop Build"
+
+[[commands]]
+id = "flareite.makefile.clearProblems"
+title = "Clear Build Problems"
+
+[[commands]]
+id = "flareite.makefile.refresh"
+title = "Refresh Targets"
+
+[configuration.arguments]
+type = "string"
+default = ""
+description = "More arguments for make, separated by spaces, such as `-j8` or `DEBUG=1`."
